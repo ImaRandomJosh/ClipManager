@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import AVFoundation
 
 struct ContentView: View {
     @EnvironmentObject private var clipboardManager: ClipboardManager
@@ -141,7 +142,10 @@ struct ContentView: View {
             }
             .padding(0)
         }
-        .frame(width: 320, height: 420)
+        .frame(
+            width: settings.scaledPanelWidth,
+            height: settings.scaledPanelHeight
+        )
         .background(VisualEffectView().ignoresSafeArea())
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .font(settings.appFont)
@@ -164,7 +168,29 @@ struct WindowBackgroundView: View {
                     endPoint: .bottomTrailing
                 )
 
-                if let image = settings.backgroundImage {
+                if let videoURL = settings.backgroundVideoURL {
+                    let viewAspect = geo.size.width / max(geo.size.height, 1)
+                    let videoAspect = CGFloat(settings.backgroundVideoAspectRatio ?? 1.0)
+                    let shouldFill = videoAspect < viewAspect
+
+                    LoopingVideoPlayerView(
+                        url: videoURL,
+                        videoGravity: shouldFill ? .resizeAspectFill : .resizeAspect
+                    )
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .opacity(settings.backgroundOpacity)
+                    .clipped()
+
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(0.05),
+                            Color.clear,
+                            Color.black.opacity(0.08)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                } else if let image = settings.backgroundImage {
                     let imageSize = image.size
                     let imageAspect = imageSize.width / max(imageSize.height, 1)
                     let viewAspect = geo.size.width / max(geo.size.height, 1)
@@ -203,6 +229,71 @@ struct WindowBackgroundView: View {
             .clipped()
         }
         .ignoresSafeArea()
+    }
+}
+
+struct LoopingVideoPlayerView: NSViewRepresentable {
+    let url: URL
+    let videoGravity: AVLayerVideoGravity
+
+    func makeNSView(context: Context) -> LoopingVideoContainerView {
+        let view = LoopingVideoContainerView()
+        view.configure(url: url, videoGravity: videoGravity)
+        return view
+    }
+
+    func updateNSView(_ nsView: LoopingVideoContainerView, context: Context) {
+        nsView.configure(url: url, videoGravity: videoGravity)
+    }
+}
+
+final class LoopingVideoContainerView: NSView {
+    private let playerLayer = AVPlayerLayer()
+    private var queuePlayer: AVQueuePlayer?
+    private var looper: AVPlayerLooper?
+    private var currentURL: URL?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
+        playerLayer.backgroundColor = NSColor.clear.cgColor
+        layer?.addSublayer(playerLayer)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func layout() {
+        super.layout()
+        playerLayer.frame = bounds
+    }
+
+    func configure(url: URL, videoGravity: AVLayerVideoGravity) {
+        playerLayer.videoGravity = videoGravity
+
+        guard currentURL != url else { return }
+        currentURL = url
+
+        let item = AVPlayerItem(url: url)
+        let player = AVQueuePlayer()
+        player.isMuted = true
+        player.actionAtItemEnd = .none
+
+        let looper = AVPlayerLooper(player: player, templateItem: item)
+
+        self.looper = looper
+        self.queuePlayer = player
+        self.playerLayer.player = player
+
+        player.play()
+    }
+
+    deinit {
+        queuePlayer?.pause()
+        playerLayer.player = nil
+        looper = nil
     }
 }
 

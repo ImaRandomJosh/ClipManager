@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 import Carbon
+import Combine
 
 @main
 struct ClipManagerApp: App {
@@ -23,22 +24,45 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var panel: NSPanel!
     var statusItem: NSStatusItem!
     var hotKeyRef: EventHotKeyRef?
+    var cancellables = Set<AnyCancellable>()
 
     func getDefaultRect() -> NSRect {
         let screenFrame = NSScreen.main?.visibleFrame
             ?? NSRect(x: 0, y: 0, width: 1000, height: 1000)
 
-        let panelWidth: CGFloat = 320
-        let panelHeight: CGFloat = 420
+        let panelWidth = settings.scaledPanelWidth
+        let panelHeight = settings.scaledPanelHeight
+        let margin: CGFloat = 20
 
         return NSRect(
-            x: screenFrame.maxX - panelWidth - 20,
-            y: screenFrame.minY + 20,
+            x: screenFrame.maxX - panelWidth - margin,
+            y: screenFrame.minY + margin,
             width: panelWidth,
             height: panelHeight
         )
     }
+    
+    func updatePanelScale(animated: Bool = true) {
+        guard panel != nil else { return }
 
+        let screenFrame = panel.screen?.visibleFrame
+            ?? NSScreen.main?.visibleFrame
+            ?? NSRect(x: 0, y: 0, width: 1000, height: 1000)
+
+        let newWidth = settings.scaledPanelWidth
+        let newHeight = settings.scaledPanelHeight
+        let margin: CGFloat = 20
+
+        let newFrame = NSRect(
+            x: screenFrame.maxX - newWidth - margin,
+            y: screenFrame.minY + margin,
+            width: newWidth,
+            height: newHeight
+        )
+
+        panel.setFrame(newFrame, display: true, animate: animated)
+    }
+    
     func applicationDidFinishLaunching(_ notification: Notification) {
         panel = NSPanel(
             contentRect: getDefaultRect(),
@@ -85,6 +109,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ) { [weak self] _ in
             self?.togglePanel()
         }
+        
+        settings.$overlayScale
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.updatePanelScale()
+            }
+            .store(in: &cancellables)
+
+        applyDockVisibility()
+
+        settings.$hideFromDock
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.applyDockVisibility()
+            }
+            .store(in: &cancellables)
 
         setupBulletproofShortcut()
     }
@@ -96,10 +136,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func setupBulletproofShortcut() {
         let modifierFlags = UInt32(cmdKey | controlKey)
-        let keyCode = UInt32(8) // C key
+        let keyCode = UInt32(8)
 
         var localHotKeyRef: EventHotKeyRef?
-        var hotKeyID = EventHotKeyID(signature: OSType(1), id: UInt32(1))
+        let hotKeyID = EventHotKeyID(signature: OSType(1), id: UInt32(1))
 
         RegisterEventHotKey(
             keyCode,
@@ -131,6 +171,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             nil,
             nil
         )
+    }
+
+    func applyDockVisibility() {
+        if settings.hideFromDock {
+            NSApp.setActivationPolicy(.accessory)
+        } else {
+            NSApp.setActivationPolicy(.regular)
+        }
     }
 
     func togglePanel() {

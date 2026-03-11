@@ -1,0 +1,3 @@
+;/*FB_PKG_DELIM*/
+
+__d("shouldPrioritizeMessenger.entrypointutils",["MessengerWebPresenceCookieData","qex"],(function(t,n,r,o,a,i,l){"use strict";function e(){var e=r("MessengerWebPresenceCookieData").cookie;if(e==null||!e.startsWith("C"))return!1;try{var t=JSON.parse(e.slice(1));if(t.lm3!=null)return!0;if(Array.isArray(t.t3))return t.t3.some(function(e){return e!=null&&e.o===1})}catch(e){}return!1}function s(){return r("qex")._("4648")===!0?e()&&r("qex")._("4693")===!0:!1}l.shouldPrioritizeMessenger=s}),98);

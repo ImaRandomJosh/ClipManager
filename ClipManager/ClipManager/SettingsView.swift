@@ -21,6 +21,15 @@ struct SettingsView: View {
                     Text("\(Int(settings.fontSize))")
                         .frame(width: 32)
                 }
+            }
+
+            Section("Background") {
+                HStack {
+                    Text("Current Background")
+                    Spacer()
+                    Text(settings.activeBackgroundDescription)
+                        .foregroundColor(.secondary)
+                }
 
                 HStack {
                     Text("Background Opacity")
@@ -29,17 +38,33 @@ struct SettingsView: View {
                         .frame(width: 45)
                 }
 
-                HStack {
-                    Button("Choose Background Image") {
+                HStack(spacing: 12) {
+                    Button("Choose Image") {
                         settings.chooseBackgroundImage()
                     }
 
-                    if settings.backgroundImage != nil {
+                    Button("Choose Video") {
+                        settings.chooseBackgroundVideo()
+                    }
+
+                    if settings.backgroundImage != nil || settings.backgroundVideoURL != nil {
                         Button("Remove Background", role: .destructive) {
-                            settings.clearBackgroundImage()
+                            settings.clearBackgroundMedia()
                         }
                     }
                 }
+                
+                HStack {
+                    Text("Overlay Scale")
+                    Slider(value: $settings.overlayScale, in: 0.75...1.75, step: 0.05)
+                    Text(String(format: "%.2fx", settings.overlayScale))
+                        .frame(width: 45)
+                }
+                
+
+                Text("Videos are muted, loop automatically, and must be 60 seconds or shorter.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
 
             Section("Behavior") {
@@ -49,8 +74,10 @@ struct SettingsView: View {
                     in: 5...200,
                     step: 5
                 )
-
+                
                 Toggle("Copy item immediately when clicked", isOn: $settings.copyOnSelection)
+                
+                Toggle("Hide from Dock", isOn: $settings.hideFromDock)
 
                 Toggle(
                     "Open at Login",
@@ -74,7 +101,7 @@ struct SettingsView: View {
             }
         }
         .padding(20)
-        .frame(width: 520)
+        .frame(width: 560)
         .alert("Reset settings?", isPresented: $showResetDefaultsAlert) {
             Button("Cancel", role: .cancel) { }
 
