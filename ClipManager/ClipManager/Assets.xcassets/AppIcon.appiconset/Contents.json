@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "IconPng.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -12,6 +13,7 @@
           "value" : "dark"
         }
       ],
+      "filename" : "IconPng 1.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -23,6 +25,7 @@
           "value" : "tinted"
         }
       ],
+      "filename" : "IconPng 2.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -48,6 +51,7 @@
       "size" : "32x32"
     },
     {
+      "filename" : "IconPng 3.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "128x128"
@@ -68,11 +72,13 @@
       "size" : "256x256"
     },
     {
+      "filename" : "IconPng 5.png",
       "idiom" : "mac",
       "scale" : "1x",
       "size" : "512x512"
     },
     {
+      "filename" : "IconPng 4.png",
       "idiom" : "mac",
       "scale" : "2x",
       "size" : "512x512"
